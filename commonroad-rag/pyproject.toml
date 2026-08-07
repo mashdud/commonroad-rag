@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "commonroad_pipeline"
+version = "0.1.0"
+description = "CommonRoad bronze/silver ingestion pipeline for the Driving-RAG project"
+requires-python = ">=3.10"
+dependencies = []
+
+[project.scripts]
+ingest_bronze = "commonroad_pipeline.ingest_bronze:main"
+parse_silver = "commonroad_pipeline.parse_silver:main"
+quality_checks = "commonroad_pipeline.quality_checks:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

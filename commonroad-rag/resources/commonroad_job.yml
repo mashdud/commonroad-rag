@@ -1,0 +1,60 @@
+resources:
+  jobs:
+    commonroad_bronze_to_silver:
+      name: commonroad_bronze_to_silver_${bundle.target}
+
+      schedule:
+        quartz_cron_expression: "0 0 3 * * ?"   # daily at 03:00
+        timezone_id: "UTC"
+        pause_status: ${var.schedule_pause_status}
+
+      email_notifications:
+        on_failure:
+          - your-team-alias@example.com
+
+      job_clusters:
+        - job_cluster_key: commonroad_cluster
+          new_cluster:
+            spark_version: "15.4.x-scala2.12"
+            node_type_id: "Standard_DS3_v2"
+            num_workers: 2
+            data_security_mode: SINGLE_USER
+
+      tasks:
+        - task_key: ingest_bronze
+          job_cluster_key: commonroad_cluster
+          python_wheel_task:
+            package_name: commonroad_pipeline
+            entry_point: ingest_bronze
+          libraries:
+            - whl: ../dist/*.whl
+          environment_key: default
+
+        - task_key: parse_silver
+          depends_on:
+            - task_key: ingest_bronze
+          job_cluster_key: commonroad_cluster
+          python_wheel_task:
+            package_name: commonroad_pipeline
+            entry_point: parse_silver
+          libraries:
+            - whl: ../dist/*.whl
+            - pypi:
+                package: commonroad-io
+          environment_key: default
+
+        - task_key: quality_check
+          depends_on:
+            - task_key: parse_silver
+          job_cluster_key: commonroad_cluster
+          python_wheel_task:
+            package_name: commonroad_pipeline
+            entry_point: quality_checks
+          libraries:
+            - whl: ../dist/*.whl
+          environment_key: default
+
+variables:
+  schedule_pause_status:
+    description: "UNPAUSED in prod, PAUSED in dev to avoid accidental scheduled runs"
+    default: "PAUSED"
